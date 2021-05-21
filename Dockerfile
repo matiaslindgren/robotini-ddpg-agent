@@ -1,20 +1,23 @@
-FROM ubuntu:18.04
+FROM tensorflow/tensorflow:2.4.1
 
-# Install required packages
-RUN apt update -y
-RUN apt-get install -y python3.7 python3-pip strace libsm6 libxext6 libxrender-dev
-RUN python3 -m pip install --trusted-host pypi.python.org numpy flask simple-pid
-RUN DEBIAN_FRONTEND=noninteractive apt-get install -yq python3-opencv
-RUN python3 -m pip install psutil
+ENV robotini_ddpg_src_url=https://github.com/matiaslindgren/robotini-ddpg/archive/refs/heads/main.zip
 
-# Set the working directory to /app
+# Install required Python packages
+RUN pip install --upgrade pip \
+	&& pip install tf-agents sklearn $robotini_ddpg_src_url
+
 WORKDIR /app
+COPY final_koira_step11800_ddpg /app/trained-policy
+COPY run.py /app
 
-# Copy the current directory contents into the container at /app
-COPY . /app
+ENV team_id="smol-brain"
+ENV team_name="smol brain neural net"
+ENV team_color="#000000"
+# ENV SIMULATOR="192.168.0.157:11000"
 
-EXPOSE 8080
-
-ENV MOVE=true headless=true
-ENV teamid=smol-brain teamname="smol brain neural net"
-ENTRYPOINT ["python3", "-u", "run.py"]
+ENTRYPOINT python3 -u run.py \
+	--trained-policy-dir=/app/trained-policy \
+	--car-socket-url="$SIMULATOR" \
+	--car-id="$team_name" \
+	--team-id="$team_id" \
+	--car-color="$car_color"
